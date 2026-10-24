@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Shopnet · Карточки с переворотом</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      background-color: #0c0d12;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+    }
+
+    .chat-container {
+      position: relative;
+      width: 401px;
+      height: 751px;
+      background-color: #1C1C1E;
+      border-radius: 0;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .floating-panel {
+      background-color: transparent;
+      border-radius: 0px;
+      padding: 4px;
+      user-select: none;
+      z-index: 25;
+      display: none;
+      height: 44px;
+      align-items: center;
+      position: relative;
+      isolation: isolate;
+      border: none;
+      outline: none;
+    }
+
+    .floating-panel.visible {
+      display: flex;
+    }
+
+    .edit-panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      min-width: 70px;
+      justify-content: center;
+    }
+
+    .btn-edit {
+      background-color: #2C2C2E;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 15px;
+      font-weight: 400;
+      padding: 6px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-panel {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 16px;
+      justify-content: center;
+      background-color: #2C2C2E;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+    }
+
+    .header-title {
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .buttons-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      min-width: 80px;
+      justify-content: center;
+    }
+
+    .right-capsule {
+      display: flex;
+      align-items: center;
+      background-color: #2C2C2E;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 2px;
+      height: 36px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      width: 34px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .search-panel {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      right: 10px;
+      padding: 4px;
+      height: 44px;
+      transform-origin: top center;
+      will-change: transform, opacity;
+      z-index: 26;
+    }
+
+    .search-wrapper {
+      width: 100%;
+      height: 36px;
+      background-color: #2C2C2E;
+      border: none;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .search-placeholder {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #8e8e93;
+      font-size: 16px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .categories-panel {
+      position: absolute;
+      top: 96px;
+      left: 10px;
+      right: 10px;
+      padding: 4px;
+      height: 44px;
+      will-change: transform;
+      z-index: 24;
+    }
+
+    .scroll-capsule {
+      width: 100%;
+      height: 36px;
+      background-color: #2C2C2E;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 3px 4px;
+      display: flex;
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    .scroll-capsule::-webkit-scrollbar {
+      display: none;
+    }
+
+    .active-bg {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 0;
+      width: 0;
+      background-color: #464648;
+      border-radius: 16px;
+      z-index: 1;
+      pointer-events: none;
+      transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .tab-item {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 16px;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      position: relative;
+      z-index: 2;
+      cursor: pointer;
+      transition: color 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .tab-item:not(.active) {
+      color: #a0a0a2;
+    }
+
+    .content-area {
+      flex: 1;
+      background-color: #1C1C1E;
+      position: relative;
+      z-index: 5;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #464648 #1C1C1E;
+    }
+
+    .content-area::-webkit-scrollbar {
+      width: 4px;
+    }
+    .content-area::-webkit-scrollbar-track {
+      background: #1C1C1E;
+    }
+    .content-area::-webkit-scrollbar-thumb {
+      background: #464648;
+      border-radius: 2px;
+    }
+
+    .placeholder-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #8e8e93;
+      font-size: 18px;
+    }
+
+    .cards-grid {
+      display: none;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      padding: 6px;
+      padding-top: 148px;
+      padding-bottom: 100px;
+    }
+
+    .cards-grid.visible {
+      display: grid;
+    }
+
+    .gift-card {
+      position: relative;
+      width: 100%;
+      perspective: 1400px;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+
+    .gift-card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      width: 100%;
+      background-color: #2C2C2E;
+      border-radius: 20px;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      isolation: isolate;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .card-front {
+      position: relative;
+    }
+
+    .card-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      transform: rotateY(180deg);
+      justify-content: space-between;
+    }
+
+    .card-face .static-bg {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      height: 60%;
+      background-color: #464648;
+      border-radius: 14px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .card-back .static-bg {
+      display: none;
+    }
+
+    .card-face > * {
+      position: relative;
+      z-index: 2;
+    }
+
+    .back-dividers {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .back-dividers .divider {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .back-dividers .divider:nth-child(1) { top: 20%; }
+    .back-dividers .divider:nth-child(2) { top: 40%; }
+    .back-dividers .divider:nth-child(3) { top: 60%; }
+    .back-dividers .divider:nth-child(4) { top: 80%; }
+
+    .image-container {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background-color: #464648;
+      border-radius: 14px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .image-container.back-avatar {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 45px;
+      height: 45px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      background-color: #464648;
+      flex: none;
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+      margin: 0;
+    }
+
+    .inner-circle {
+      width: 39.6px;
+      height: 39.6px;
+      border-radius: 50%;
+      background-color: #2C2C2E;
+      z-index: 2;
+    }
+
+    .card-back .action-container {
+      margin-top: auto;
+      margin-bottom: 0;
+    }
+
+    .cart-icon-large {
+      width: 50%;
+      height: 50%;
+      color: #8e8e93;
+      z-index: 2;
+    }
+
+    .badge {
+      position: absolute;
+      top: 6px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 3;
+      background: rgba(255, 255, 255, 0.22) !important;
+      color: #ffffff;
+    }
+
+    .badge-heart { left: 6px; }
+    .badge-cart { left: 36px; }
+    .badge-send { left: 66px; }
+
+    .badge-heart svg,
+    .badge-cart svg,
+    .badge-send svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+      stroke: none;
+    }
+
+    .badge-heart svg {
+      fill: #ffffff;
+    }
+
+    .badge-cart svg {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .badge-send svg {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .info-container {
+      margin-top: 4px;
+      padding-left: 4px;
+      padding-bottom: 4px;
+    }
+
+    .title {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 2px 0;
+      letter-spacing: -0.2px;
+    }
+
+    .id-number {
+      color: #8e8e93;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .action-container {
+      margin-top: 4px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .buy-button {
+      flex-grow: 1;
+      height: 34px;
+      background-color: #007aff;
+      border: none;
+      border-radius: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    .buy-button:active {
+      opacity: 0.85;
+    }
+
+    .buy-button.gold {
+      background: linear-gradient(to bottom, #e0a96d 0%, #c98a4b 100%);
+    }
+
+    .price {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .price-icon {
+      width: 14px;
+      height: 14px;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .cart-button {
+      width: 34px;
+      height: 34px;
+      background-color: #464648;
+      border: none;
+      border-radius: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .cart-button:active {
+      background-color: #5a5a5c;
+    }
+
+    .cart-button svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon {
+      fill: #ffffff;
+    }
+
+    .nav-panel {
+      position: absolute;
+      bottom: 15px;
+      left: 10px;
+      right: 90px;
+      display: flex;
+      background-color: rgba(44, 44, 46, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 40px;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      align-items: stretch;
+      z-index: 30;
+      overflow: visible;
+      box-sizing: border-box;
+      justify-content: space-between;
+      height: 77px;
+      isolation: isolate;
+    }
+
+    .nav-slider {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      height: auto;
+      background-color: rgba(70, 70, 72, 0.9);
+      border-radius: 35px;
+      z-index: -1;
+      will-change: transform;
+      transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
+      pointer-events: none;
+      opacity: 1;
+    }
+
+    .nav-item {
+      position: relative;
+      display: block;
+      flex: 1;
+      height: 100%;
+      color: #8e8e93;
+      text-decoration: none;
+      cursor: pointer;
+      border-radius: 35px;
+      user-select: none;
+      transition: color 0.2s ease;
+      box-sizing: border-box;
+      min-width: 0;
+      z-index: 1;
+    }
+
+    .profile-button {
+      position: absolute;
+      bottom: 15px;
+      right: 10px;
+      width: 77px;
+      height: 77px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 30;
+      user-select: none;
+      box-sizing: border-box;
+      padding: 0;
+      background-color: rgba(44, 44, 46, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .major-coin-button {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #ffd175 0%, #ff9743 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: box-shadow 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+      box-shadow:
+        0 0 0 0 rgba(44, 44, 46, 0),
+        0 0 0 0 rgba(47, 128, 237, 0),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-button.active .major-coin-button {
+      box-shadow:
+        0 0 0 3px rgba(44, 44, 46, 1),
+        0 0 0 6px rgba(47, 128, 237, 1),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .major-coin-symbol {
+      color: #ffffff;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .nav-item svg {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+    }
+    .nav-item svg.home-icon { width: 28px; height: 28px; top: 7px; }
+    .nav-item .cart-icon { width: 28px; height: 28px; top: 6px; }
+    .nav-item .catalog-icon { width: 28px; height: 28px; top: 6px; }
+    .nav-item svg.chat-icon { width: 28px; height: 28px; top: 6px; }
+
+    .nav-item span {
+      position: absolute;
+      bottom: 13px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1;
+      display: block;
+      white-space: nowrap;
+    }
+
+    .nav-item.active {
+      color: #2f80ed;
+    }
+    .nav-item:not(.active) svg.home-icon path { fill: #8e8e93; }
+    .nav-item.active svg.home-icon path { fill: #2f80ed; }
+    .nav-item .cart-icon path { stroke: #8e8e93; }
+    .nav-item.active .cart-icon path { stroke: #2f80ed; }
+    .nav-item .catalog-icon { color: #8e8e93; }
+    .nav-item.active .catalog-icon { color: #2f80ed; }
+    .nav-item:not(.active) svg.chat-icon { color: #8e8e93; }
+    .nav-item.active svg.chat-icon { color: #2f80ed; }
+
+    /* ============================================================
+       ЭКРАН ПРОФИЛЯ
+       ============================================================ */
+    .profile-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #1C1C1E;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+
+      --scroll-bg: #1C1C1E;
+      --card-bg: #2C2C2E;
+      --radius-strong: 999px;
+      --radius-soft: 20px;
+      --radius-icon: 10px;
+      --divider-color: rgba(255, 255, 255, 0.08);
+      --text-secondary: #8e8e93;
+      --accent-blue: #0a84ff;
+    }
+
+    .profile-screen.visible {
+      display: flex;
+    }
+
+    .profile-screen .profile-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      padding-bottom: 110px;
+      background-color: var(--scroll-bg);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .profile-screen .profile-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .profile-screen .info-section {
+      background-color: var(--scroll-bg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .profile-screen .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      margin-bottom: 10px;
+    }
+
+    .profile-screen .nav-btn {
+      background-color: var(--card-bg);
+      border: none;
+      color: #ffffff;
+      border-radius: var(--radius-strong);
+      padding: 10px 16px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .profile-screen .nav-btn:active {
+      transform: scale(0.96);
+      background-color: #343436;
+    }
+
+    .profile-screen .icon-btn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      background-color: var(--card-bg);
+      border-radius: var(--radius-strong);
+      color: #ffffff;
+      border: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .profile-screen .icon-btn:active {
+      transform: scale(0.96);
+      background-color: #343436;
+    }
+
+    .profile-screen .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+
+    .profile-screen .profile-avatar-large {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      background-color: var(--card-bg);
+      margin-bottom: 12px;
+    }
+
+    .profile-screen .profile-name-large {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .profile-screen .profile-username {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      align-self: center;
+    }
+
+    .profile-screen .card {
+      background-color: var(--card-bg);
+      border-radius: var(--radius-soft);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .profile-screen .card-capsule {
+      border-radius: var(--radius-strong) !important;
+    }
+
+    .profile-screen .card-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      gap: 16px;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .profile-screen .card-item:active {
+      background-color: #343436;
+    }
+
+    .profile-screen .card-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 64px;
+      right: 0;
+      height: 0.5px;
+      background-color: var(--divider-color);
+    }
+
+    .profile-screen .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      background-color: #333;
+    }
+
+    .profile-screen .icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-icon);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .profile-screen .icon-box.red { background: linear-gradient(180deg, #ff6b6b 0%, #ff453a 100%); }
+    .profile-screen .icon-box.blue { background: linear-gradient(180deg, #54a9ff 0%, #0a84ff 100%); }
+    .profile-screen .icon-box.green { background: linear-gradient(180deg, #4cd964 0%, #32d74b 100%); }
+    .profile-screen .icon-box.orange { background: linear-gradient(180deg, #ffcc00 0%, #ff9f0a 100%); }
+    .profile-screen .icon-box.lightblue { background: linear-gradient(180deg, #5ac8fa 0%, #0a84ff 100%); }
+    .profile-screen .icon-box.purple { background: linear-gradient(180deg, #a284ff 0%, #7c5cff 100%); }
+    .profile-screen .icon-box.yellow { background: linear-gradient(180deg, #ffd54f 0%, #ffb300 100%); }
+    .profile-screen .icon-box.pink { background: linear-gradient(180deg, #ff8a9d 0%, #ff4b68 100%); }
+    .profile-screen .icon-box.cyan { background: linear-gradient(180deg, #65d2e9 0%, #1cc6e6 100%); }
+    .profile-screen .icon-box.grey { background: linear-gradient(180deg, #a6a6ad 0%, #7c7c85 100%); }
+
+    .profile-screen .item-text {
+      font-size: 17px;
+      font-weight: 400;
+      flex: 1;
+    }
+
+    .profile-screen .badge-count {
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin-right: 4px;
+    }
+
+    .profile-screen .chevron {
+      width: 8px;
+      height: 14px;
+      fill: none;
+      stroke: var(--text-secondary);
+      stroke-width: 2.5px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .profile-screen .btn-accent {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      gap: 16px;
+      cursor: pointer;
+      color: var(--accent-blue);
+      transition: background-color 0.15s ease;
+    }
+
+    .profile-screen .btn-accent:active {
+      background-color: #343436;
+    }
+
+    .profile-screen .btn-accent svg {
+      fill: var(--accent-blue);
+    }
+
+    .profile-screen .group-title {
+      padding: 0 4px;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin-top: 4px;
+      margin-bottom: -8px;
+    }
+
+    /* ============================================================
+       НОВЫЙ ЭКРАН "MY SHOP" — плавное появление из правого угла
+       ============================================================ */
+    .shop-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #1C1C1E;
+      z-index: 28;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      /* стартовое состояние: сдвинут вправо, прозрачный, немного уменьшен */
+      transform: translateX(100%) scale(0.92);
+      transform-origin: top right;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.32s ease;
+    }
+
+    .shop-screen.visible {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .shop-scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      scrollbar-width: thin;
+      scrollbar-color: #464648 #1C1C1E;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    .shop-scroll-container::-webkit-scrollbar { width: 4px; }
+    .shop-scroll-container::-webkit-scrollbar-track { background: #1C1C1E; }
+    .shop-scroll-container::-webkit-scrollbar-thumb { background: #464648; border-radius: 2px; }
+
+    .shop-header-section {
+      background: linear-gradient(180deg, #5288a8 0%, #3b6583 100%);
+      padding: 16px 16px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      flex-shrink: 0;
+      z-index: 10;
+      transition: padding 0.3s ease, background 0.3s ease;
+    }
+
+    .shop-header-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10l-15 10 15 10 15-10-15-10zm0 15l-10-6.6 10-6.6 10 6.6-10 6.6z' fill='%23ffffff' fill-opacity='0.06'/%3E%3C/svg%3E");
+      z-index: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .shop-header-section.collapsed {
+      padding: 8px 16px 8px 16px;
+      background: #2C2C2E;
+    }
+
+    .shop-header-section.collapsed::before {
+      opacity: 0;
+    }
+
+    .shop-header-section.collapsed .shop-avatar-container,
+    .shop-header-section.collapsed .shop-channel-username,
+    .shop-header-section.collapsed .shop-action-buttons,
+    .shop-header-section.collapsed .shop-edit-button,
+    .shop-header-section.collapsed .shop-back-button {
+      opacity: 0;
+      height: 0;
+      width: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      pointer-events: none;
+      border: none;
+    }
+
+    .shop-avatar-container,
+    .shop-channel-username,
+    .shop-action-buttons,
+    .shop-edit-button,
+    .shop-back-button {
+      transition: opacity 0.25s ease, height 0.3s ease, width 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+      overflow: hidden;
+    }
+
+    .shop-channel-title {
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 1;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      transition: font-size 0.3s ease, margin 0.3s ease;
+    }
+
+    .shop-header-section.collapsed .shop-channel-title {
+      font-size: 18px;
+      margin-bottom: 0;
+    }
+
+    .shop-back-button {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 42px;
+      height: 42px;
+      background-color: rgba(23, 33, 43, 0.55);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: background-color 0.3s ease, opacity 0.25s ease, transform 0.2s ease, border-color 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .shop-back-button:hover { background-color: rgba(23, 33, 43, 0.75); }
+    .shop-back-button:active { transform: scale(0.95); }
+
+    .shop-back-button svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+      margin-left: -2px;
+    }
+
+    .shop-edit-button {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      height: 42px;
+      padding: 0 18px;
+      background-color: rgba(23, 33, 43, 0.55);
+      border-radius: 21px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: background-color 0.3s ease, transform 0.1s ease, opacity 0.25s ease, border-color 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .shop-edit-button:hover { background-color: rgba(23, 33, 43, 0.75); }
+    .shop-edit-button:active { transform: scale(0.95); }
+
+    .shop-avatar-container {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background-color: #62a9dd;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      margin-bottom: 12px;
+      z-index: 1;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .shop-avatar-container::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%);
+    }
+
+    .shop-avatar-container svg {
+      width: 65px;
+      height: 65px;
+      z-index: 1;
+    }
+
+    .shop-verified-badge {
+      width: 18px;
+      height: 18px;
+      fill: #fff;
+      flex-shrink: 0;
+    }
+
+    .shop-channel-username {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-weight: 400;
+      z-index: 1;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+
+    .shop-channel-username:hover { opacity: 0.75; }
+    .shop-channel-username:active { opacity: 0.5; }
+
+    .shop-action-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      width: 100%;
+      margin-top: 20px;
+      z-index: 1;
+    }
+
+    .shop-action-btn {
+      background-color: rgba(23, 33, 43, 0.55);
+      border-radius: 12px;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.1s ease, border-color 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+      min-height: 56px;
+    }
+
+    .shop-action-btn:active { transform: scale(0.97); }
+    .shop-action-btn:hover { background-color: rgba(23, 33, 43, 0.75); }
+
+    .shop-stat-number {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.3px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .shop-stat-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .shop-header-section.collapsed .shop-back-button,
+    .shop-header-section.collapsed .shop-edit-button,
+    .shop-header-section.collapsed .shop-action-btn {
+      background-color: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .shop-header-section.collapsed .shop-back-button:hover,
+    .shop-header-section.collapsed .shop-edit-button:hover,
+    .shop-header-section.collapsed .shop-action-btn:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .shop-header-section.collapsed .shop-stat-number {
+      color: #e8e8e8;
+      text-shadow: none;
+    }
+
+    .shop-header-section.collapsed .shop-stat-label {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .shop-info-section {
+      background-color: #1C1C1E;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .shop-info-card {
+      background-color: #2C2C2E;
+      border-radius: 20px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .shop-info-label {
+      color: #8e8e93;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      text-transform: lowercase;
+    }
+
+    .shop-info-text {
+      color: #ffffff;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .shop-info-text a {
+      color: #007aff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .shop-bottom-categories-wrapper {
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    .shop-scroll-capsule {
+      width: 100%;
+      height: 44px;
+      background-color: #2C2C2E;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 22px;
+      padding: 4px;
+      display: flex;
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .shop-scroll-capsule::-webkit-scrollbar { display: none; }
+
+    .shop-active-bg {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 0;
+      width: 0;
+      background-color: #464648;
+      border-radius: 18px;
+      z-index: 1;
+      pointer-events: none;
+      transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .shop-tab-item {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 18px;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      position: relative;
+      z-index: 2;
+      cursor: pointer;
+      transition: color 0.25s ease;
+      flex-shrink: 0;
+      border-radius: 18px;
+    }
+
+    .shop-tab-item:not(.active) { color: #8e8e93; }
+    .shop-tab-item.active { color: #ffffff; }
+
+    .shop-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      flex-shrink: 0;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="chat-container">
+  <div class="floating-panel edit-panel visible" id="editPanel"><button class="btn-edit">Изм.</button></div>
+  <div class="floating-panel title-panel visible" id="titlePanel"><h1 class="header-title">Shopnet</h1></div>
+  <div class="floating-panel buttons-panel visible" id="buttonsPanel">
+    <div class="right-capsule">
+      <button class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>
+      <button class="icon-btn"><svg class="pencil-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/><line x1="10" y1="12" x2="14" y2="8"/><line x1="8" y1="14" x2="12" y2="10"/></svg></button>
+    </div>
+  </div>
+
+  <div class="floating-panel search-panel visible" id="searchPanel">
+    <div class="search-wrapper"><div class="search-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Поиск</span></div></div>
+  </div>
+
+  <div class="floating-panel categories-panel visible" id="categoriesPanel">
+    <div class="scroll-capsule" id="scrollCapsule">
+      <div class="active-bg" id="activeBg"></div>
+      <div class="tab-item active" onclick="setActiveCategory(this)">Все</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">My Chats</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">TON Devs</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">BotsCreators</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">Crypto</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">Lists</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">Contact</div>
+      <div class="tab-item" onclick="setActiveCategory(this)">Jetton</div>
+    </div>
+  </div>
+
+  <div class="content-area" id="contentArea">
+    <div class="cards-grid visible" id="cardsGrid">
+      <!-- карточка 1 -->
+      <div class="gift-card">
+        <div class="card-inner">
+          <div class="card-face card-front">
+            <div class="static-bg"></div>
+            <div class="image-container">
+              <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+              <div class="badge badge-heart"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8.96173 18.9109L9.42605 18.3219L8.96173 18.9109ZM12 5.50063L11.4596 6.02073C11.601 6.16763 11.7961 6.25063 12 6.25063C12.2039 6.25063 12.399 6.16763 12.5404 6.02073L12 5.50063ZM15.0383 18.9109L15.5026 19.4999L15.0383 18.9109ZM9.42605 18.3219C7.91039 17.1271 6.25307 15.9603 4.93829 14.4798C3.64922 13.0282 2.75 11.3345 2.75 9.1371H1.25C1.25 11.8026 2.3605 13.8361 3.81672 15.4758C5.24723 17.0866 7.07077 18.3752 8.49742 19.4999L9.42605 18.3219ZM2.75 9.1371C2.75 6.98623 3.96537 5.18252 5.62436 4.42419C7.23607 3.68748 9.40166 3.88258 11.4596 6.02073L12.5404 4.98053C10.0985 2.44352 7.26409 2.02539 5.00076 3.05996C2.78471 4.07292 1.25 6.42503 1.25 9.1371H2.75ZM8.49742 19.4999C9.00965 19.9037 9.55954 20.3343 10.1168 20.6599C10.6739 20.9854 11.3096 21.25 12 21.25V19.75C11.6904 19.75 11.3261 19.6293 10.8736 19.3648C10.4213 19.1005 9.95208 18.7366 9.42605 18.3219L8.49742 19.4999ZM15.5026 19.4999C16.9292 18.3752 18.7528 17.0866 20.1833 15.4758C21.6395 13.8361 22.75 11.8026 22.75 9.1371H21.25C21.25 11.3345 20.3508 13.0282 19.0617 14.4798C17.7469 15.9603 16.0896 17.1271 14.574 18.3219L15.5026 19.4999ZM22.75 9.1371C22.75 6.42503 21.2153 4.07292 18.9992 3.05996C16.7359 2.02539 13.9015 2.44352 11.4596 4.98053L12.5404 6.02073C14.5983 3.88258 16.7639 3.68748 18.3756 4.42419C20.0346 5.18252 21.25 6.98623 21.25 9.1371H22.75ZM14.574 18.3219C14.0479 18.7366 13.5787 19.1005 13.1264 19.3648C12.6739 19.6293 12.3096 19.75 12 19.75V21.25C12.6904 21.25 13.3261 20.9854 13.8832 20.6599C14.4405 20.3343 14.9903 19.9037 15.5026 19.4999L14.574 18.3219Z" fill="#ffffff"/></svg></div>
+              <div class="badge badge-cart"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg></div>
+              <div class="badge badge-send"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 12C9 13.3807 7.88071 14.5 6.5 14.5C5.11929 14.5 4 13.3807 4 12C4 10.6193 5.11929 9.5 6.5 9.5C7.88071 9.5 9 10.6193 9 12Z"/><path d="M14 6.5L9 10"/><path d="M14 17.5L9 14"/><path d="M19 18.5C19 19.8807 17.8807 21 16.5 21C15.1193 21 14 19.8807 14 18.5C14 17.1193 15.1193 16 16.5 16C17.8807 16 19 17.1193 19 18.5Z"/><path d="M19 5.5C19 6.88071 17.8807 8 16.5 8C15.1193 8 14 6.88071 14 5.5C14 4.11929 15.1193 3 16.5 3C17.8807 3 19 4.11929 19 5.5Z"/></svg></div>
+            </div>
+            <div class="info-container"><h3 class="title">Snoop Dogg</h3><span class="id-number">#557730</span></div>
+            <div class="action-container"><button class="buy-button"><span class="price">8.97</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+          <div class="card-face card-back">
+            <div class="static-bg"></div>
+            <div class="image-container back-avatar">
+              <div class="inner-circle"></div>
+            </div>
+            <div class="back-dividers">
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+            </div>
+            <div class="action-container"><button class="buy-button"><span class="price">8.97</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- карточка 2 -->
+      <div class="gift-card">
+        <div class="card-inner">
+          <div class="card-face card-front">
+            <div class="static-bg"></div>
+            <div class="image-container">
+              <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+            </div>
+            <div class="info-container"><h3 class="title">Pikachu</h3><span class="id-number">#001234</span></div>
+            <div class="action-container"><button class="buy-button"><span class="price">12.50</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+          <div class="card-face card-back">
+            <div class="static-bg"></div>
+            <div class="image-container back-avatar">
+              <div class="inner-circle"></div>
+            </div>
+            <div class="back-dividers">
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+            </div>
+            <div class="action-container"><button class="buy-button"><span class="price">12.50</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- карточка 3 -->
+      <div class="gift-card">
+        <div class="card-inner">
+          <div class="card-face card-front">
+            <div class="static-bg"></div>
+            <div class="image-container">
+              <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+            </div>
+            <div class="info-container"><h3 class="title">Alien</h3><span class="id-number">#998877</span></div>
+            <div class="action-container"><button class="buy-button"><span class="price">5.20</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+          <div class="card-face card-back">
+            <div class="static-bg"></div>
+            <div class="image-container back-avatar">
+              <div class="inner-circle"></div>
+            </div>
+            <div class="back-dividers">
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+            </div>
+            <div class="action-container"><button class="buy-button"><span class="price">5.20</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- карточка 4 -->
+      <div class="gift-card">
+        <div class="card-inner">
+          <div class="card-face card-front">
+            <div class="static-bg"></div>
+            <div class="image-container">
+              <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+            </div>
+            <div class="info-container"><h3 class="title">Princess</h3><span class="id-number">#445566</span></div>
+            <div class="action-container"><button class="buy-button"><span class="price">15.99</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+          <div class="card-face card-back">
+            <div class="static-bg"></div>
+            <div class="image-container back-avatar">
+              <div class="inner-circle"></div>
+            </div>
+            <div class="back-dividers">
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+              <div class="divider"></div>
+            </div>
+            <div class="action-container"><button class="buy-button"><span class="price">15.99</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="placeholder-text" id="placeholderText" style="display: none;">Faves</div>
+  </div>
+
+  <!-- ========= ЭКРАН ПРОФИЛЯ ========= -->
+  <div class="profile-screen" id="profileScreen">
+    <div class="profile-scroll" id="profileScroll">
+      <div class="info-section">
+        <div class="top-nav">
+          <button class="nav-btn icon-btn" onclick="closeProfile()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </button>
+          <button class="nav-btn">Изм.</button>
+        </div>
+
+        <div class="profile-header">
+          <img src="https://picsum.photos/200/200?random=3" alt="Profile" class="profile-avatar-large">
+          <div class="profile-name-large">Ignat</div>
+          <div class="profile-username">@eknatand</div>
+        </div>
+
+        <div class="card card-capsule">
+          <div class="card-item" onclick="openShopScreen()">
+            <div class="icon-box yellow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </div>
+            <span class="item-text">My Shop</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="group-title">General Information</div>
+        <div class="card">
+          <div class="card-item">
+            <div class="icon-box blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#ffffff" stroke-width="2"></circle>
+                <line x1="12" y1="16" x2="12" y2="12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8" stroke="#ffffff" stroke-width="2" stroke-linecap="round"></line>
+              </svg>
+            </div>
+            <span class="item-text">Topic</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <span class="item-text">Language</span>
+            <span class="badge-count">Русский</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box orange">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </div>
+            <span class="item-text">Notifications</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box pink">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <span class="item-text">Vibrations</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </div>
+            <span class="item-text">Focusing</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box red">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <span class="item-text">Privacy</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box lightblue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <span class="item-text">Display</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box grey">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+            <span class="item-text">Interface</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="group-title">Referral</div>
+        <div class="card">
+          <div class="card-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <span class="item-text" style="font-weight: 600;">Referral Link</span>
+            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+              <div style="flex: 1; background: #1C1C1E; border-radius: 10px; padding: 10px 12px; color: #8e8e93; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                https://t.me/shopnet_bot?start=ref_557730
+              </div>
+              <button class="icon-btn" style="width: 36px; height: 36px; background: #0a84ff; border-radius: 10px; flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-capsule">
+          <div class="btn-accent" style="color: #0a84ff;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <span class="item-text" style="color: #0a84ff;">Add to Home Screen</span>
+          </div>
+        </div>
+
+        <div class="group-title">About</div>
+        <div class="card">
+          <div class="card-item">
+            <div class="icon-box cyan">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <span class="item-text">Privacy Policy</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <span class="item-text">Terms of Service</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+          <div class="card-item">
+            <div class="icon-box orange">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                <circle cx="8" cy="12" r="1.5" fill="#ff9f0a"></circle>
+                <circle cx="12" cy="12" r="1.5" fill="#ff9f0a"></circle>
+                <circle cx="16" cy="12" r="1.5" fill="#ff9f0a"></circle>
+              </svg>
+            </div>
+            <span class="item-text">Support</span>
+            <svg class="chevron" viewBox="0 0 8 14"><polyline points="1 1 7 7 1 13"></polyline></svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========= НОВЫЙ ЭКРАН MY SHOP ========= -->
+  <div class="shop-screen" id="shopScreen">
+    <div class="shop-scroll-container" id="shopScrollContainer">
+      <div class="shop-header-section" id="shopHeaderSection">
+        <div class="shop-back-button" onclick="closeShopScreen()">
+          <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <div class="shop-edit-button" onclick="alert('Редактирование...')">Изм.</div>
+        <div class="shop-avatar-container">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 15 L85 40 L60 50 L70 75 L50 60 L30 75 L40 50 L15 40 Z" fill="rgba(0,0,0,0.1)" transform="translate(2, 2)" />
+            <path d="M50 15 L85 40 L60 50 L70 75 L50 60 L30 75 L40 50 L15 40 Z" fill="#ffffff" />
+            <path d="M30 80 Q 50 80 70 80 L 75 85 L 25 85 Z" fill="#ffffff" />
+            <path d="M25 85 Q 50 87 75 85" fill="none" stroke="#e0e0e0" stroke-width="1" />
+            <circle cx="75" cy="80" r="5" fill="#f4c542" />
+          </svg>
+        </div>
+        <div class="shop-channel-title">
+          Telegram Designers
+          <svg class="shop-verified-badge" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+        <a href="https://t.me/designers" target="_blank" class="shop-channel-username">@designers</a>
+        <div class="shop-action-buttons">
+          <div class="shop-action-btn">
+            <span class="shop-stat-number">9</span>
+            <span class="shop-stat-label">Подписки</span>
+          </div>
+          <div class="shop-action-btn">
+            <span class="shop-stat-number">3.1M</span>
+            <span class="shop-stat-label">Подписчики</span>
+          </div>
+          <div class="shop-action-btn">
+            <span class="shop-stat-number">48.0M</span>
+            <span class="shop-stat-label">лайков</span>
+          </div>
+          <div class="shop-action-btn">
+            <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            <span>ещё</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-info-section">
+        <div class="shop-info-card">
+          <div class="shop-info-label">описание</div>
+          <div class="shop-info-text">
+            Feature suggestions for Telegram from designers all over the world. If you want to contribute, message <a href="#">@designers</a> directly.
+          </div>
+        </div>
+
+        <div class="shop-bottom-categories-wrapper">
+          <div class="shop-scroll-capsule" id="shopScrollCapsule">
+            <div class="shop-active-bg" id="shopActiveBg"></div>
+            <div class="shop-tab-item active" onclick="setShopCategory(this)">All</div>
+            <div class="shop-tab-item" onclick="setShopCategory(this)">Active</div>
+            <div class="shop-tab-item" onclick="setShopCategory(this)">Inactive</div>
+            <div class="shop-tab-item" onclick="setShopCategory(this)">Faves</div>
+          </div>
+        </div>
+
+        <div class="shop-cards-grid">
+          <!-- Карточка 1: Snoop Dogg -->
+          <div class="gift-card">
+            <div class="card-inner">
+              <div class="card-face card-front">
+                <div class="static-bg"></div>
+                <div class="image-container">
+                  <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+                  <div class="badge badge-heart"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8.96173 18.9109L9.42605 18.3219L8.96173 18.9109ZM12 5.50063L11.4596 6.02073C11.601 6.16763 11.7961 6.25063 12 6.25063C12.2039 6.25063 12.399 6.16763 12.5404 6.02073L12 5.50063ZM15.0383 18.9109L15.5026 19.4999L15.0383 18.9109ZM9.42605 18.3219C7.91039 17.1271 6.25307 15.9603 4.93829 14.4798C3.64922 13.0282 2.75 11.3345 2.75 9.1371H1.25C1.25 11.8026 2.3605 13.8361 3.81672 15.4758C5.24723 17.0866 7.07077 18.3752 8.49742 19.4999L9.42605 18.3219ZM2.75 9.1371C2.75 6.98623 3.96537 5.18252 5.62436 4.42419C7.23607 3.68748 9.40166 3.88258 11.4596 6.02073L12.5404 4.98053C10.0985 2.44352 7.26409 2.02539 5.00076 3.05996C2.78471 4.07292 1.25 6.42503 1.25 9.1371H2.75ZM8.49742 19.4999C9.00965 19.9037 9.55954 20.3343 10.1168 20.6599C10.6739 20.9854 11.3096 21.25 12 21.25V19.75C11.6904 19.75 11.3261 19.6293 10.8736 19.3648C10.4213 19.1005 9.95208 18.7366 9.42605 18.3219L8.49742 19.4999ZM15.5026 19.4999C16.9292 18.3752 18.7528 17.0866 20.1833 15.4758C21.6395 13.8361 22.75 11.8026 22.75 9.1371H21.25C21.25 11.3345 20.3508 13.0282 19.0617 14.4798C17.7469 15.9603 16.0896 17.1271 14.574 18.3219L15.5026 19.4999ZM22.75 9.1371C22.75 6.42503 21.2153 4.07292 18.9992 3.05996C16.7359 2.02539 13.9015 2.44352 11.4596 4.98053L12.5404 6.02073C14.5983 3.88258 16.7639 3.68748 18.3756 4.42419C20.0346 5.18252 21.25 6.98623 21.25 9.1371H22.75ZM14.574 18.3219C14.0479 18.7366 13.5787 19.1005 13.1264 19.3648C12.6739 19.6293 12.3096 19.75 12 19.75V21.25C12.6904 21.25 13.3261 20.9854 13.8832 20.6599C14.4405 20.3343 14.9903 19.9037 15.5026 19.4999L14.574 18.3219Z" fill="#ffffff"/></svg></div>
+                  <div class="badge badge-cart"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg></div>
+                  <div class="badge badge-send"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 12C9 13.3807 7.88071 14.5 6.5 14.5C5.11929 14.5 4 13.3807 4 12C4 10.6193 5.11929 9.5 6.5 9.5C7.88071 9.5 9 10.6193 9 12Z"/><path d="M14 6.5L9 10"/><path d="M14 17.5L9 14"/><path d="M19 18.5C19 19.8807 17.8807 21 16.5 21C15.1193 21 14 19.8807 14 18.5C14 17.1193 15.1193 16 16.5 16C17.8807 16 19 17.1193 19 18.5Z"/><path d="M19 5.5C19 6.88071 17.8807 8 16.5 8C15.1193 8 14 6.88071 14 5.5C14 4.11929 15.1193 3 16.5 3C17.8807 3 19 4.11929 19 5.5Z"/></svg></div>
+                </div>
+                <div class="info-container"><h3 class="title">Snoop Dogg</h3><span class="id-number">#557730</span></div>
+                <div class="action-container"><button class="buy-button"><span class="price">8.97</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+              <div class="card-face card-back">
+                <div class="static-bg"></div>
+                <div class="image-container back-avatar"><div class="inner-circle"></div></div>
+                <div class="back-dividers"><div class="divider"></div><div class="divider"></div><div class="divider"></div><div class="divider"></div></div>
+                <div class="action-container"><button class="buy-button"><span class="price">8.97</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Карточка 2: Pikachu -->
+          <div class="gift-card">
+            <div class="card-inner">
+              <div class="card-face card-front">
+                <div class="static-bg"></div>
+                <div class="image-container">
+                  <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+                </div>
+                <div class="info-container"><h3 class="title">Pikachu</h3><span class="id-number">#001234</span></div>
+                <div class="action-container"><button class="buy-button"><span class="price">12.50</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+              <div class="card-face card-back">
+                <div class="static-bg"></div>
+                <div class="image-container back-avatar"><div class="inner-circle"></div></div>
+                <div class="back-dividers"><div class="divider"></div><div class="divider"></div><div class="divider"></div><div class="divider"></div></div>
+                <div class="action-container"><button class="buy-button"><span class="price">12.50</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Карточка 3: Alien -->
+          <div class="gift-card">
+            <div class="card-inner">
+              <div class="card-face card-front">
+                <div class="static-bg"></div>
+                <div class="image-container">
+                  <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+                </div>
+                <div class="info-container"><h3 class="title">Alien</h3><span class="id-number">#998877</span></div>
+                <div class="action-container"><button class="buy-button"><span class="price">5.20</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+              <div class="card-face card-back">
+                <div class="static-bg"></div>
+                <div class="image-container back-avatar"><div class="inner-circle"></div></div>
+                <div class="back-dividers"><div class="divider"></div><div class="divider"></div><div class="divider"></div><div class="divider"></div></div>
+                <div class="action-container"><button class="buy-button"><span class="price">5.20</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Карточка 4: Princess -->
+          <div class="gift-card">
+            <div class="card-inner">
+              <div class="card-face card-front">
+                <div class="static-bg"></div>
+                <div class="image-container">
+                  <svg class="cart-icon-large" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+                </div>
+                <div class="info-container"><h3 class="title">Princess</h3><span class="id-number">#445566</span></div>
+                <div class="action-container"><button class="buy-button"><span class="price">15.99</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+              <div class="card-face card-back">
+                <div class="static-bg"></div>
+                <div class="image-container back-avatar"><div class="inner-circle"></div></div>
+                <div class="back-dividers"><div class="divider"></div><div class="divider"></div><div class="divider"></div><div class="divider"></div></div>
+                <div class="action-container"><button class="buy-button"><span class="price">15.99</span><svg class="price-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#30A1F5" d="M66.523 11.333H33.477c-4.401 0-6.601 0-8.592.616a13.8 13.8 0 0 0-4.808 2.625c-1.594 1.341-2.784 3.192-5.164 6.894L4.408 37.81c-1.572 2.446-2.358 3.67-2.572 4.956a6.3 6.3 0 0 0 .362 3.37c.482 1.212 1.51 2.24 3.567 4.296l39.033 39.034c1.821 1.82 2.731 2.731 3.781 3.072a4.6 4.6 0 0 0 2.842 0c1.05-.34 1.96-1.251 3.78-3.072l39.035-39.034c2.056-2.056 3.084-3.084 3.566-4.296a6.3 6.3 0 0 0 .362-3.37c-.214-1.287-1-2.51-2.572-4.956L85.087 21.47c-2.38-3.703-3.57-5.554-5.164-6.895a13.8 13.8 0 0 0-4.808-2.625c-1.99-.616-4.191-.616-8.592-.616z"/><path fill="#fff" d="M60.268 24.224c.537-1.45 2.59-1.45 3.126 0l3.71 10.027a2.2 2.2 0 0 0 1.3 1.3l10.027 3.71c1.451.537 1.451 2.59 0 3.126l-10.027 3.71a2.2 2.2 0 0 0-1.3 1.3l-3.71 10.027c-.537 1.451-2.59 1.451-3.126 0l-3.71-10.027a2.2 2.2 0 0 0-1.3-1.3l-10.027-3.71c-1.451-.537-1.451-2.589 0-3.126l10.027-3.71a2.2 2.2 0 0 0 1.3-1.3z"/></svg></button><button class="cart-button" onclick="flipCard(this)"><svg viewBox="0 0 24 24"><path d="M14 16H19V21M10 8H5V3M19.4176 9.0034C18.8569 7.61566 17.9181 6.41304 16.708 5.53223C15.4979 4.65141 14.0652 4.12752 12.5723 4.02051C11.0794 3.9135 9.58606 4.2274 8.2627 4.92661C6.93933 5.62582 5.83882 6.68254 5.08594 7.97612M4.58203 14.9971C5.14272 16.3848 6.08146 17.5874 7.29157 18.4682C8.50169 19.3491 9.93588 19.8723 11.4288 19.9793C12.9217 20.0863 14.4138 19.7725 15.7371 19.0732C17.0605 18.374 18.1603 17.3175 18.9131 16.0239"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Круглая кнопка профиля (справа) -->
+  <div class="profile-button" id="profileButton" onclick="setActiveProfile(this)">
+    <div class="major-coin-button">
+      <span class="major-coin-symbol">I</span>
+    </div>
+  </div>
+
+  <!-- Правая панель навигации -->
+  <div class="nav-panel">
+    <div class="nav-slider" id="slider"></div>
+    <div class="nav-item active" id="homeTab" onclick="setActiveTab(this, 0)">
+      <svg class="home-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M7.435 1.25h9.13c.57 0 1.054 0 1.453.041.426.044.82.14 1.192.37.371.23.633.539.863.9.215.34.432.772.687 1.282l.016.033q.015.03.027.06l1.403 3.547c.168.423.353.95.407 1.488.055.552-.02 1.183-.453 1.73a2.75 2.75 0 0 1-1.41.945v9.604H22a.75.75 0 0 1 0 1.5H2a.75.75 0 0 1 0-1.5h1.25v-9.604a2.75 2.75 0 0 1-1.41-.944c-.432-.548-.508-1.18-.453-1.73.054-.54.24-1.066.406-1.489l1.404-3.548l.027-.06l.016-.032c.255-.51.471-.943.687-1.282c.23-.361.492-.67.863-.9c.372-.23.766-.326 1.191-.37c.4-.041.884-.041 1.454-.041M18 10.888a2.75 2.75 0 0 0 1.25.758v9.604h-4v-2.782c0-.44 0-.82-.028-1.13c-.03-.33-.096-.656-.273-.963a2.25 2.25 0 0 0-.824-.824c-.307-.177-.633-.243-.962-.273c-.312-.028-.691-.028-1.13-.028h-.065c-.44 0-.82 0-1.13.028c-.33.03-.656.096-.963.273a2.25 2.25 0 0 0-.824.824c-.177.307-.243.633-.273.962c-.028.312-.028.691-.028 1.13v2.783h-4v-9.603a2.75 2.75 0 0 0 1.25-.76a2.74 2.74 0 0 0 2 .863c.788 0 1.499-.331 2-.863a2.74 2.74 0 0 0 2 .863c.788 0 1.499-.331 2-.863a2.74 2.74 0 0 0 2 .863c.788 0 1.499-.331 2-.863M10.25 21.25h3.5V18.5c0-.481 0-.792-.022-1.027c-.02-.225-.055-.307-.079-.348a.75.75 0 0 0-.274-.274c-.04-.024-.123-.058-.348-.079A13 13 0 0 0 12 16.75c-.481 0-.792 0-1.027.022c-.225.02-.307.055-.348.079a.75.75 0 0 0-.274.274c-.024.04-.059.123-.079.348c-.021.235-.022.546-.022 1.027zM6.75 9a1.25 1.25 0 0 0 2.5 0a.75.75 0 0 1 1.5 0a1.25 1.25 0 0 0 2.5 0a.75.75 0 0 1 1.5 0a1.25 1.25 0 0 0 2.5 0a.75.75 0 0 1 1.5 0a1.25 1.25 0 0 0 2.232.773c.114-.144.17-.342.138-.652c-.032-.322-.151-.688-.308-1.086L19.42 4.517c-.268-.535-.447-.89-.613-1.15c-.16-.252-.274-.361-.386-.43c-.111-.07-.26-.123-.557-.154c-.314-.032-.72-.033-1.336-.033H7.472c-.617 0-1.023 0-1.336.033c-.297.031-.446.085-.557.154s-.226.178-.386.43c-.167.26-.345.615-.613 1.15L3.188 8.035c-.157.398-.276.764-.308 1.086c-.031.31.024.508.138.652A1.25 1.25 0 0 0 5.25 9a.75.75 0 0 1 1.5 0" clip-rule="evenodd"/></svg>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" id="defaultTab" onclick="setActiveTab(this, 1)">
+      <svg class="catalog-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.0001 9C16.0001 9.55229 15.5523 10 15.0001 10C14.4478 10 14.0001 9.55229 14.0001 9C14.0001 8.44772 14.4478 8 15.0001 8C15.5523 8 16.0001 8.44772 16.0001 9Z" fill="currentColor"/><path d="M10.0001 9C10.0001 9.55229 9.55235 10 9.00006 10C8.44778 10 8.00006 9.55229 8.00006 9C8.00006 8.44772 8.44778 8 9.00006 8C9.55235 8 10.0001 8.44772 10.0001 9Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M12.0001 2.75C10.7574 2.75 9.75006 3.75736 9.75006 5V5.25447C10.1676 5.24999 10.6183 5.25 11.1053 5.25H12.8948C13.3819 5.25 13.8326 5.24999 14.2501 5.25447V5C14.2501 3.75736 13.2427 2.75 12.0001 2.75ZM15.7501 5.30694V5C15.7501 2.92893 14.0711 1.25 12.0001 1.25C9.929 1.25 8.25006 2.92893 8.25006 5V5.30694C8.11506 5.31679 7.98479 5.32834 7.85904 5.34189C6.98068 5.43657 6.24614 5.63489 5.59385 6.08197C5.3695 6.23574 5.15877 6.40849 4.96399 6.59833C4.39766 7.15027 4.05914 7.83166 3.79405 8.67439C3.53667 9.49258 3.32867 10.5327 3.06729 11.8396L3.04822 11.935C2.67158 13.8181 2.37478 15.302 2.28954 16.484C2.20244 17.6916 2.32415 18.7075 2.89619 19.588C3.08705 19.8817 3.30982 20.1534 3.56044 20.3982C4.31157 21.1318 5.28392 21.4504 6.48518 21.6018C7.66087 21.75 9.17418 21.75 11.0946 21.75H12.9055C14.826 21.75 16.3393 21.75 17.5149 21.6018C18.7162 21.4504 19.6886 21.1318 20.4397 20.3982C20.6903 20.1534 20.9131 19.8817 21.1039 19.588C21.676 18.7075 21.7977 17.6916 21.7106 16.484C21.6254 15.3021 21.3286 13.8182 20.9519 11.9351L20.9328 11.8396C20.6715 10.5327 20.4635 9.49259 20.2061 8.67439C19.941 7.83166 19.6025 7.15027 19.0361 6.59833C18.8414 6.40849 18.6306 6.23574 18.4063 6.08197C17.754 5.63489 17.0194 5.43657 16.1411 5.34189C16.0153 5.32834 15.8851 5.31679 15.7501 5.30694ZM8.01978 6.83326C7.27307 6.91374 6.81176 7.06572 6.44188 7.31924C6.28838 7.42445 6.1442 7.54265 6.01093 7.67254C5.68979 7.98552 5.45028 8.40807 5.22492 9.12449C4.99463 9.85661 4.80147 10.8172 4.52967 12.1762C4.14013 14.1239 3.8633 15.5153 3.78565 16.5919C3.70906 17.6538 3.83838 18.2849 4.15401 18.7707C4.2846 18.9717 4.43702 19.1576 4.60849 19.3251C5.02293 19.7298 5.61646 19.9804 6.67278 20.1136C7.74368 20.2486 9.1623 20.25 11.1486 20.25H12.8515C14.8378 20.25 16.2564 20.2486 17.3273 20.1136C18.3837 19.9804 18.9772 19.7298 19.3916 19.3251C19.5631 19.1576 19.7155 18.9717 19.8461 18.7707C20.1617 18.2849 20.2911 17.6538 20.2145 16.5919C20.1368 15.5153 19.86 14.1239 19.4705 12.1762C19.1987 10.8173 19.0055 9.85661 18.7752 9.12449C18.5498 8.40807 18.3103 7.98552 17.9892 7.67254C17.8559 7.54265 17.7118 7.42445 17.5582 7.31924C17.1884 7.06572 16.7271 6.91374 15.9803 6.83326C15.2173 6.75101 14.2374 6.75 12.8515 6.75H11.1486C9.76271 6.75 8.78285 6.75101 8.01978 6.83326Z" fill="currentColor"/></svg>
+      <span>Faves</span>
+    </div>
+    <div class="nav-item" id="cartTab" onclick="setActiveTab(this, 2)">
+      <svg class="cart-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.5 8.5h19l-1.164 6.986c-.4 2.395-.599 3.592-1.438 4.303-.84.711-2.053.711-4.48.711H9.582c-2.428 0-3.642 0-4.48-.71-.84-.712-1.04-1.91-1.439-4.304zm9.5 4v4m4-4v4m-8-4v4m14.5-8h-21m16.5 0l-3-5m-9 5l3-5"/></svg>
+      <span>Cart</span>
+    </div>
+    <div class="nav-item" id="messagesTab" onclick="setActiveTab(this, 3)">
+      <svg class="chat-icon" viewBox="0 0 32 32"><path fill="currentColor" d="M2 13.5C2 7.701 6.701 3 12.5 3S23 7.701 23 13.5S18.3 24 12.5 24c-1.686 0-3.281-.398-4.695-1.106L3.89 23.943a1.5 1.5 0 0 1-1.837-1.837l1.05-3.918A10.4 10.4 0 0 1 2 13.5m10.5 12q1-.001 1.955-.158A8.46 8.46 0 0 0 19.5 27c1.486 0 2.88-.38 4.094-1.049a1 1 0 0 1 .741-.09l3.456.926l-.926-3.458a1 1 0 0 1 .09-.74A8.46 8.46 0 0 0 28 18.5a8.49 8.49 0 0 0-3.665-6.991a12 12 0 0 0-.787-2.7A10.5 10.5 0 0 1 30 18.5a10.5 10.5 0 0 1-1.102 4.688l1.05 3.918a1.5 1.5 0 0 1-1.838 1.837l-3.915-1.049A10.46 10.46 0 0 1 19.5 29c-3.124 0-5.93-1.364-7.853-3.53q.423.03.853.03"/></svg>
+      <span>Messages</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    async function initTelegramApp() {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        if (window.Telegram.WebApp.requestFullscreen) {
+          try { await window.Telegram.WebApp.requestFullscreen(); } catch (error) {}
+        }
+      }
+    }
+    window.addEventListener('DOMContentLoaded', initTelegramApp);
+
+    const slider = document.getElementById('slider');
+    const editPanel = document.getElementById('editPanel');
+    const titlePanel = document.getElementById('titlePanel');
+    const buttonsPanel = document.getElementById('buttonsPanel');
+    const searchPanel = document.getElementById('searchPanel');
+    const categoriesPanel = document.getElementById('categoriesPanel');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const placeholderText = document.getElementById('placeholderText');
+    const contentArea = document.getElementById('contentArea');
+    const profileButton = document.getElementById('profileButton');
+    const profileScreen = document.getElementById('profileScreen');
+    const profileScroll = document.getElementById('profileScroll');
+    const shopScreen = document.getElementById('shopScreen');
+    let isProfileActive = false;
+
+    const SEARCH_TOP = 50;
+    const CATEGORIES_TOP = 96;
+    const CATEGORIES_RISE_DISTANCE = CATEGORIES_TOP - SEARCH_TOP;
+    const SCROLL_THRESHOLD = 60;
+    let ticking = false;
+
+    function handleContentScroll() {
+      if (!document.getElementById('homeTab').classList.contains('active')) return;
+
+      const scrollTop = contentArea.scrollTop;
+      const progress = Math.min(scrollTop / SCROLL_THRESHOLD, 1);
+
+      const searchScaleY = 1 - progress;
+      const searchOpacity = 1 - progress;
+      const categoriesRise = -progress * CATEGORIES_RISE_DISTANCE;
+
+      searchPanel.style.transform = `scaleY(${searchScaleY})`;
+      searchPanel.style.opacity = searchOpacity;
+
+      categoriesPanel.style.transform = `translateY(${categoriesRise}px)`;
+    }
+
+    contentArea.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleContentScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    function resetScrollAnimation() {
+      contentArea.scrollTop = 0;
+      searchPanel.style.transform = 'scaleY(1)';
+      searchPanel.style.opacity = '1';
+      categoriesPanel.style.transform = 'translateY(0)';
+    }
+
+    function setActiveTab(element, index) {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      profileButton.classList.remove('active');
+      element.classList.add('active');
+
+      profileScreen.classList.remove('visible');
+      shopScreen.classList.remove('visible');
+
+      if (element.id === 'homeTab') {
+        editPanel.classList.add('visible');
+        titlePanel.classList.add('visible');
+        buttonsPanel.classList.add('visible');
+        searchPanel.classList.add('visible');
+        categoriesPanel.classList.add('visible');
+        cardsGrid.classList.add('visible');
+        placeholderText.style.display = 'none';
+        resetScrollAnimation();
+      } else {
+        editPanel.classList.remove('visible');
+        titlePanel.classList.remove('visible');
+        buttonsPanel.classList.remove('visible');
+        searchPanel.classList.remove('visible');
+        categoriesPanel.classList.remove('visible');
+        cardsGrid.classList.remove('visible');
+        placeholderText.style.display = 'flex';
+        placeholderText.textContent = element.querySelector('span').textContent;
+        resetScrollAnimation();
+      }
+
+      const parent = element.parentElement;
+      const parentRect = parent.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const offsetLeft = elementRect.left - parentRect.left;
+      const padding = 6;
+      const elementWidth = Math.round(elementRect.width);
+      const sliderWidth = elementWidth - 4;
+      const sliderOffset = Math.round(offsetLeft - padding + 2);
+
+      if (isProfileActive) {
+        slider.style.transition = 'none';
+        slider.style.width = sliderWidth + 'px';
+        slider.style.transform = 'translateX(' + sliderOffset + 'px)';
+        void slider.offsetHeight;
+        slider.style.transition = 'opacity 0.2s ease';
+        slider.style.opacity = '1';
+        isProfileActive = false;
+      } else {
+        slider.style.transition = 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease';
+        slider.style.width = sliderWidth + 'px';
+        slider.style.transform = 'translateX(' + sliderOffset + 'px)';
+        slider.style.opacity = '1';
+      }
+    }
+
+    function setActiveProfile(element) {
+      if (element.classList.contains('active')) {
+        setActiveTab(document.getElementById('homeTab'), 0);
+        return;
+      }
+
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      editPanel.classList.remove('visible');
+      titlePanel.classList.remove('visible');
+      buttonsPanel.classList.remove('visible');
+      searchPanel.classList.remove('visible');
+      categoriesPanel.classList.remove('visible');
+      cardsGrid.classList.remove('visible');
+      placeholderText.style.display = 'none';
+
+      profileScreen.classList.add('visible');
+      profileScroll.scrollTop = 0;
+      shopScreen.classList.remove('visible');
+
+      slider.style.transition = 'opacity 0.2s ease';
+      slider.style.opacity = '0';
+      isProfileActive = true;
+      element.classList.add('active');
+      resetScrollAnimation();
+    }
+
+    function closeProfile() {
+      setActiveTab(document.getElementById('homeTab'), 0);
+    }
+
+    function openShopScreen() {
+      // Скрываем профиль
+      profileScreen.classList.remove('visible');
+      // Показываем shop — CSS-переход сам анимирует появление из правого верхнего угла
+      shopScreen.classList.add('visible');
+      document.getElementById('shopScrollContainer').scrollTop = 0;
+      document.getElementById('shopHeaderSection').classList.remove('collapsed');
+      // Обновляем позицию индикатора категорий
+      setTimeout(() => {
+        const shopCapsule = document.getElementById('shopScrollCapsule');
+        const shopActiveBg = document.getElementById('shopActiveBg');
+        const activeShopTab = document.querySelector('.shop-tab-item.active');
+        if (shopCapsule && shopActiveBg && activeShopTab) {
+          const capsuleRect = shopCapsule.getBoundingClientRect();
+          const tabRect = activeShopTab.getBoundingClientRect();
+          const leftPosition = tabRect.left - capsuleRect.left + shopCapsule.scrollLeft;
+          shopActiveBg.style.transition = 'none';
+          shopActiveBg.style.left = leftPosition + 'px';
+          shopActiveBg.style.width = tabRect.width + 'px';
+          void shopActiveBg.offsetHeight;
+          shopActiveBg.style.transition = 'left 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+        }
+      }, 60);
+    }
+
+    function closeShopScreen() {
+      shopScreen.classList.remove('visible');
+      profileScreen.classList.add('visible');
+      profileScroll.scrollTop = 0;
+    }
+
+    function setShopCategory(element) {
+      const shopTabs = document.querySelectorAll('.shop-tab-item');
+      shopTabs.forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      const shopCapsule = document.getElementById('shopScrollCapsule');
+      const shopActiveBg = document.getElementById('shopActiveBg');
+      const capsuleRect = shopCapsule.getBoundingClientRect();
+      const tabRect = element.getBoundingClientRect();
+      const leftPosition = tabRect.left - capsuleRect.left + shopCapsule.scrollLeft;
+      shopActiveBg.style.left = leftPosition + 'px';
+      shopActiveBg.style.width = tabRect.width + 'px';
+      shopCapsule.scrollTo({
+        left: (element.offsetLeft + element.offsetWidth / 2) - shopCapsule.offsetWidth / 2,
+        behavior: 'smooth'
+      });
+    }
+
+    // Скролл шапки в My Shop
+    const shopScrollContainer = document.getElementById('shopScrollContainer');
+    const shopHeaderSection = document.getElementById('shopHeaderSection');
+    shopScrollContainer.addEventListener('scroll', () => {
+      const scrollTop = shopScrollContainer.scrollTop;
+      if (scrollTop > 50) {
+        shopHeaderSection.classList.add('collapsed');
+      } else {
+        shopHeaderSection.classList.remove('collapsed');
+      }
+    }, { passive: true });
+
+    const capsule = document.getElementById('scrollCapsule');
+    const activeBg = document.getElementById('activeBg');
+    const categoryTabs = document.querySelectorAll('.tab-item');
+
+    function setActiveCategory(element) {
+      categoryTabs.forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      moveSliderHeader(element);
+      capsule.scrollTo({ left: (element.offsetLeft + element.offsetWidth / 2) - capsule.offsetWidth / 2, behavior: 'smooth' });
+    }
+
+    function moveSliderHeader(activeTab) {
+      const capsuleRect = capsule.getBoundingClientRect();
+      const tabRect = activeTab.getBoundingClientRect();
+      const leftPosition = tabRect.left - capsuleRect.left + capsule.scrollLeft;
+      activeBg.style.left = leftPosition + 'px';
+      activeBg.style.width = tabRect.width + 'px';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const defaultActiveHeader = document.querySelector('.tab-item.active');
+      activeBg.style.transition = 'none';
+      moveSliderHeader(defaultActiveHeader);
+      activeBg.offsetHeight;
+      activeBg.style.transition = 'left 0.35s cubic-bezier(0.25, 1, 0.5, 1), width 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+      setActiveTab(document.getElementById('homeTab'), 0);
+    });
+
+    window.addEventListener('resize', () => {
+      const currentActiveHeader = document.querySelector('.tab-item.active');
+      if (currentActiveHeader) moveSliderHeader(currentActiveHeader);
+      const activeNavItem = document.querySelector('.nav-panel .nav-item.active');
+      if (activeNavItem) {
+        const parent = activeNavItem.parentElement;
+        const parentRect = parent.getBoundingClientRect();
+        const elementRect = activeNavItem.getBoundingClientRect();
+        const offsetLeft = elementRect.left - parentRect.left;
+        const padding = 6;
+        const elementWidth = Math.round(elementRect.width);
+        slider.style.width = (elementWidth - 4) + 'px';
+        slider.style.transform = 'translateX(' + Math.round(offsetLeft - padding + 2) + 'px)';
+      }
+      const shopCapsule = document.getElementById('shopScrollCapsule');
+      const shopActiveBg = document.getElementById('shopActiveBg');
+      const activeShopTab = document.querySelector('.shop-tab-item.active');
+      if (shopCapsule && shopActiveBg && activeShopTab && shopScreen.classList.contains('visible')) {
+        const capsuleRect = shopCapsule.getBoundingClientRect();
+        const tabRect = activeShopTab.getBoundingClientRect();
+        const leftPosition = tabRect.left - capsuleRect.left + shopCapsule.scrollLeft;
+        shopActiveBg.style.left = leftPosition + 'px';
+        shopActiveBg.style.width = tabRect.width + 'px';
+      }
+    });
+
+    window.flipCard = function(button) {
+      var card = button.closest('.gift-card');
+      if (card) {
+        card.classList.toggle('flipped');
+      }
+    };
+
+    window.setActiveTab = setActiveTab;
+    window.setActiveProfile = setActiveProfile;
+    window.closeProfile = closeProfile;
+    window.setActiveCategory = setActiveCategory;
+    window.openShopScreen = openShopScreen;
+    window.closeShopScreen = closeShopScreen;
+    window.setShopCategory = setShopCategory;
+  })();
+</script>
+</body>
+</html>
